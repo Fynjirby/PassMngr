@@ -2,3 +2,5 @@
 *.icns
 *.png
 *.jsono
+*.spec
+build
