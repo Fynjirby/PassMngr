@@ -3,12 +3,15 @@ from tkinter import messagebox, ttk
 import pyperclip
 import json
 import os, platform
+import string
+import random
+import webbrowser
 
 class PasswordManager:
     def __init__(self, master):
         self.master = master
         self.master.title("Password Manager")
-        self.master.geometry("400x500")
+        self.master.geometry("400x600")
         self.passwords = {}
 
         # Load passwords from file
@@ -17,7 +20,7 @@ class PasswordManager:
         self.frame = ttk.Frame(self.master)
         self.frame.pack(fill="both", expand=True)
 
-        self.label = ttk.Label(self.frame, text="Website: ")
+        self.label = ttk.Label(self.frame, text="Login: ")
         self.label.pack(pady=10)
 
         self.entry = ttk.Entry(self.frame, width=40)
@@ -26,25 +29,33 @@ class PasswordManager:
         self.label2 = ttk.Label(self.frame, text="Password: ")
         self.label2.pack(pady=10)
 
-        self.entry2 = ttk.Entry(self.frame, width=40, show="*")
+        self.entry2 = ttk.Entry(self.frame, width=40)
         self.entry2.pack()
+        
+        self.button_generate = ttk.Button(self.frame, text="Generate Password", command=self.generate_password)
+        self.button_generate.pack(pady=10)
+
+        self.use_symbols_var = tk.IntVar()
+        self.use_symbols_checkbox = ttk.Checkbutton(self.frame, text="Use symbols", variable=self.use_symbols_var)
+        self.use_symbols_checkbox.pack(pady=10)
 
         self.button = ttk.Button(self.frame, text="Add", command=self.add_password)
         self.button.pack(pady=10)
 
-        self.treeview = ttk.Treeview(self.frame, columns=("Website", "Password"))
+        self.treeview = ttk.Treeview(self.frame, columns=("Login", "Password"))
         self.treeview.pack(fill="both", expand=True)
 
         self.treeview.column("#0", width=0, stretch=tk.NO)
-        self.treeview.column("Website", anchor=tk.W, width=200)
+        self.treeview.column("Login", anchor=tk.W, width=200)
         self.treeview.column("Password", anchor=tk.W, width=200)
 
         self.treeview.heading("#0", text="", anchor=tk.W)
-        self.treeview.heading("Website", text="Website", anchor=tk.W)
+        self.treeview.heading("Login", text="Login", anchor=tk.W)
         self.treeview.heading("Password", text="Password", anchor=tk.W)
 
         self.update_treeview()
 
+        self.treeview.bind("<Double-1>", self.treeview_item_click)  
         self.treeview.bind("<BackSpace>", self.delete_password)
         self.master.bind("<Return>", lambda event: self.add_password())
         if platform.system() == 'Darwin':  # macOS
@@ -55,10 +66,48 @@ class PasswordManager:
 
         self.menu = tk.Menu(self.master, tearoff=0)
         self.file_menu = tk.Menu(self.menu, tearoff=0)
+        self.help_menu = tk.Menu(self.menu, tearoff=0)
         self.file_menu.add_command(label="Delete", command=self.delete_password)
         self.file_menu.add_command(label="Edit", command=self.edit_password_window)
-        self.menu.add_cascade(label="File", menu=self.file_menu)
+        self.menu.add_cascade(label="Password", menu=self.file_menu)
+        
+        self.help_menu.add_command(label="Dev's Github", command=lambda: webbrowser.open('https://github.com/fynjirby'))
+        self.menu.add_cascade(label="Help", menu=self.help_menu)
+        
         self.master.config(menu=self.menu)
+
+    def treeview_item_click(self, event):
+        item = self.treeview.selection()[0]
+        website = self.treeview.item(item, "values")[0]
+        password = self.passwords[website]
+
+        password_window = tk.Toplevel(self.master)
+        password_window.title("Password")        
+        password_window.geometry("170x300")
+
+        label_website = ttk.Label(password_window, text="Login: ")
+        label_website.pack(pady=10)
+
+        label_website_value = ttk.Label(password_window, text=website)
+        label_website_value.pack(pady=10)
+
+        label_password = ttk.Label(password_window, text="Password: ")
+        label_password.pack(pady=10)
+
+        label_password_value = ttk.Label(password_window, text=password)
+        label_password_value.pack(pady=10)
+
+        def copy_password(event=None):
+            pyperclip.copy(password)
+
+        button_copy = ttk.Button(password_window, text="Copy", command=lambda: pyperclip.copy(password))
+        button_copy.pack(pady=10)
+        label_copy = ttk.Label(password_window, text="Cmd + C | Ctrl + C")
+        label_copy.pack(pady=10)
+        password_window.bind("<Command-c>", copy_password)  # macOS
+        password_window.bind("<Control-c>", copy_password)  # Windows, Linux
+        button_edit = ttk.Button(password_window, text="Edit", command=self.edit_password_window)
+        button_edit.pack(pady=0)
 
     def load_passwords(self):
         if os.path.exists("passwords.json"):
@@ -71,6 +120,15 @@ class PasswordManager:
     def save_passwords(self):
         with open("passwords.json", "w") as f:
             json.dump(self.passwords, f)
+
+    def generate_password(self):
+        length = random.randint(8, 12)
+        chars = string.ascii_letters + string.digits
+        if self.use_symbols_var.get():
+            chars += string.punctuation
+        password = ''.join(random.choice(chars) for _ in range(length))
+        self.entry2.delete(0, tk.END)
+        self.entry2.insert(0, password)
 
     def add_password(self):
         website = self.entry.get()
@@ -90,18 +148,18 @@ class PasswordManager:
         password = self.treeview.item(item, "values")[1]
         self.entry.insert(0, website)
         self.entry2.insert(0, password)
-
+        
     def edit_password_window(self):
         selection = self.treeview.selection()
         if selection:
             item = selection[0]
             website = self.treeview.item(item, "values")[0]
-            password = self.treeview.item(item, "values")[1]
+            password = self.passwords[website]
 
             edit_window = tk.Toplevel(self.master)
             edit_window.title("Edit Password")
 
-            label_website = ttk.Label(edit_window, text="Website: ")
+            label_website = ttk.Label(edit_window, text="Login: ")
             label_website.pack(pady=10)
 
             entry_website = ttk.Entry(edit_window, width=40)
@@ -127,10 +185,11 @@ class PasswordManager:
 
             button_save = ttk.Button(edit_window, text="Save", command=save_changes)
             button_save.pack(pady=10)
-
+            self.master.bind("<Return>", lambda event: save_changes())
         else:
             messagebox.showerror("Error", "No password selected")
-                
+
+                    
     def delete_password(self, event=None):
         selection = self.treeview.selection()
         if selection:
@@ -145,7 +204,8 @@ class PasswordManager:
     def update_treeview(self):
         self.treeview.delete(*self.treeview.get_children())
         for website, password in self.passwords.items():
-            self.treeview.insert("", tk.END, values=(website, password))
+            self.treeview.insert("", tk.END, values=(website, "*" * len(password)))
+                  
 root = tk.Tk()
 my_manager = PasswordManager(root)
 root.mainloop()

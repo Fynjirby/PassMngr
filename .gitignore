@@ -1,6 +1,7 @@
 .DS_Store
 *.icns
 *.png
-*.jsono
+*.json
 *.spec
 build
+*.app
