@@ -1,3 +1,3 @@
 # PassMngr
 Simple Cross-platform Pass Manager
-![https://github.com/Fynjirby/PassMngr/icon.png]()
+<img scr='https://github.com/Fynjirby/PassMngr/icon.png'>
