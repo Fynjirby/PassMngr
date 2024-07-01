@@ -3,4 +3,5 @@
 *.json
 *.spec
 build
+dist
 *.app
