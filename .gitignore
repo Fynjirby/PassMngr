@@ -4,4 +4,3 @@ icons
 *.spec
 build
 dist
-*.app
