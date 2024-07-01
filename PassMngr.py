@@ -82,6 +82,7 @@ class PasswordManager:
         # Help menu
         self.menu.add_cascade(label="Help", menu=self.help_menu)
         self.help_menu.add_command(label="Dev's Github", command=lambda: webbrowser.open('https://github.com/fynjirby'))
+        self.help_menu.add_command(label="About", command=lambda: self.about_window())
 
     # Make on click func
     def treeview_item_click(self, event):
@@ -233,6 +234,17 @@ class PasswordManager:
         for website, password in self.passwords.items():
             self.treeview.insert("", tk.END, values=(website, "*" * len(password)))
 
+    # Create about window
+    def about_window(self):
+        about_window = tk.Toplevel(self.master)
+        about_window.title("About")
+        about_window.geometry("200x60")
+        copyright = ttk.Label(about_window, text="Fynjirby 2024 ©")
+        copyright.pack(pady=5)
+        link = ttk.Label(about_window, text="Source code (click)")
+        link.pack()
+        link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/fynjirby/passmngr"))
+        
 # Just need :)
 root = tk.Tk()
 my_manager = PasswordManager(root)
